@@ -16,8 +16,8 @@ import java.net.URL;
  */
 public class api {
 
-    private static final String URL_AUTOR = "http://localhost/SERVICIOS_MVC/controller/api.php";
-    private static final String URL_LIBRO = "http://localhost/SERVICIOS_MVC/controller/apiLibros.php";
+    private static final String URL_AUTOR = "http://localhost/rest/api.php";
+    private static final String URL_LIBRO = "http://localhost/rest/apiLibros.php";
 
     public static String getAutores() {
         try {
