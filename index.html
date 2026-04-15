@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Biblioteca - CRUD Completo</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+
+<body>
+
+    <div class="form-container">
+        <input type="text" id="buscar_apellido" placeholder="Buscar por apellido...">
+        <button onclick="buscarAutor()">Buscar Autor</button>
+        <button onclick="listarAutores()">Ver Todos</button>
+    </div>
+
+    <div class="form-container">
+        <input type="text" id="buscar_titulo" placeholder="Buscar por título...">
+        <button onclick="buscarLibro()">Buscar Libro</button>
+        <button onclick="listarLibros()">Ver Todos</button>
+    </div>
+    <div class="form-container">
+        <h3 id="tituloAutor">Registrar Nuevo Autor</h3>
+        <input type="hidden" id="editandoAutor" value="false">
+
+        <input type="text" id="id_autor" placeholder="ID Autor">
+        <input type="text" id="nombre_autor" placeholder="Nombre">
+        <input type="text" id="apellido_autor" placeholder="Apellido">
+        <input type="email" id="correo_autor" placeholder="Correo">
+        <button class="btn-save" onclick="guardarAutor()">Guardar Datos Autor</button>
+        <button onclick="limpiarFormAutor()">Cancelar/Limpiar</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoAutores"></tbody>
+    </table>
+
+    <hr>
+
+    <div class="form-container">
+        <h3 id="tituloLibro">Registrar Nuevo Libro</h3>
+        <input type="hidden" id="editandoLibro" value="false">
+
+        <input type="text" id="id_libro" placeholder="ID Libro">
+        <input type="text" id="titulo_libro" placeholder="Título">
+        <input type="number" id="anio_libro" placeholder="Año">
+        <select id="comboAutores">
+            <option value="">Cargando autores...</option>
+        </select>
+
+        <button class="btn-save" onclick="guardarLibro()">Guardar Datos Libro</button>
+        <button onclick="limpiarFormLibro()">Cancelar/Limpiar</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Año</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoLibros"></tbody>
+    </table>
+
+    <script>
+        const API_AUTORES = 'api.php';
+        const API_LIBROS = 'apiLibros.php';
+
+        $(document).ready(function () {
+            listarAutores();
+            listarLibros();
+        });
+
+        function listarAutores() {
+            $.ajax({
+                url: API_AUTORES, type: 'GET', dataType: 'json',
+                success: function (data) {
+                    let html = '';
+                    let options = '<option value="">Seleccione un autor...</option>';
+                    data.forEach(a => {
+                        let autorJson = JSON.stringify(a).replace(/'/g, "&apos;");
+                        html += `<tr>
+                            <td>${a.ID}</td><td>${a.NOMBRE}</td><td>${a.APELLIDO}</td><td>${a.CORREO}</td>
+                            <td>
+                                <button class="btn-edit" onclick='prepararEdicionAutor(${autorJson})'>Editar</button>
+                                <button class="btn-delete" onclick="eliminarAutor('${a.ID}')">Borrar</button>
+                            </td>
+                        </tr>`;
+                        options += `<option value="${a.ID}">${a.NOMBRE} ${a.APELLIDO}</option>`;
+                    });
+                    $('#cuerpoAutores').html(html);
+                    $('#comboAutores').html(options);
+                }
+            });
+        }
+
+        function prepararEdicionAutor(autor) {
+            $('#tituloAutor').text('Editando Autor: ' + autor.NOMBRE);
+            $('#id_autor').val(autor.ID).prop('readonly', true);
+            $('#nombre_autor').val(autor.NOMBRE);
+            $('#apellido_autor').val(autor.APELLIDO);
+            $('#correo_autor').val(autor.CORREO);
+            $('#editandoAutor').val('true');
+        }
+
+        function guardarAutor() {
+            const esEdicion = $('#editandoAutor').val() === 'true';
+            const datos = {
+                id: $('#id_autor').val(),
+                nombre: $('#nombre_autor').val(),
+                apellido: $('#apellido_autor').val(),
+                correo: $('#correo_autor').val()
+            };
+
+            $.ajax({
+                url: API_AUTORES,
+                type: esEdicion ? 'PUT' : 'POST',
+                data: datos,
+                success: function () {
+                    alert(esEdicion ? "Autor Actualizado" : "Autor Creado");
+                    limpiarFormAutor();
+                    listarAutores();
+                }
+            });
+        }
+
+        function limpiarFormAutor() {
+            $('#tituloAutor').text('Registrar Nuevo Autor');
+            $('#id_autor').val('').prop('readonly', false);
+            $('#nombre_autor').val(''); $('#apellido_autor').val(''); $('#correo_autor').val('');
+            $('#editandoAutor').val('false');
+        }
+
+        function listarLibros() {
+            $.ajax({
+                url: API_LIBROS, type: 'GET', dataType: 'json',
+                success: function (data) {
+                    let html = '';
+                    data.forEach(l => {
+                        let libroJson = JSON.stringify(l).replace(/'/g, "&apos;");
+                        html += `<tr>
+                            <td>${l.ID}</td><td>${l.TITULO}</td><td>${l.ANIO}</td>
+                            <td>
+                                <button class="btn-edit" onclick='prepararEdicionLibro(${libroJson})'>Editar</button>
+                                <button class="btn-delete" onclick="eliminarLibro('${l.ID}')">Borrar</button>
+                            </td>
+                        </tr>`;
+                    });
+                    $('#cuerpoLibros').html(html);
+                }
+            });
+        }
+
+        function prepararEdicionLibro(l) {
+            $('#tituloLibro').text('Editando Libro');
+            $('#id_libro').val(l.ID).prop('readonly', true);
+            $('#titulo_libro').val(l.TITULO);
+            $('#anio_libro').val(l.ANIO);
+            $('#comboAutores').val(l.AUTOR_ID);
+            $('#editandoLibro').val('true');
+        }
+
+        function guardarLibro() {
+            const esEdicion = $('#editandoLibro').val() === 'true';
+            const datos = {
+                id: $('#id_libro').val(),
+                titulo: $('#titulo_libro').val(),
+                anio: $('#anio_libro').val(),
+                autor_id: $('#comboAutores').val()
+            };
+
+            $.ajax({
+                url: API_LIBROS,
+                type: esEdicion ? 'PUT' : 'POST',
+                data: datos,
+                success: function () {
+                    alert("Operación exitosa");
+                    limpiarFormLibro();
+                    listarLibros();
+                }
+            });
+        }
+
+        function limpiarFormLibro() {
+            $('#tituloLibro').text('Registrar Nuevo Libro');
+            $('#id_libro').val('').prop('readonly', false);
+            $('#titulo_libro').val(''); $('#anio_libro').val(''); $('#comboAutores').val('');
+            $('#editandoLibro').val('false');
+        }
+
+        function buscarAutor() {
+            const ape = $('#buscar_apellido').val();
+            if (ape === "") {
+                listarAutores();
+                return;
+            }
+
+            $.ajax({
+                url: API_AUTORES,
+                type: 'GET',
+                data: { apellido: ape }, 
+                dataType: 'json',
+                success: function (data) {
+                    dibujarTablaAutores(data);
+                },
+                error: function () {
+                    alert("Error en la búsqueda de autores");
+                }
+            });
+        }
+        function buscarLibro() {
+            const tit = $('#buscar_titulo').val();
+            if (tit === "") {
+                listarLibros();
+                return;
+            }
+
+            $.ajax({
+                url: API_LIBROS,
+                type: 'GET',
+                data: { titulo: tit },
+                dataType: 'json',
+                success: function (data) {
+                    dibujarTablaLibros(data);
+                },
+                error: function () {
+                    alert("Error en la búsqueda de libros");
+                }
+            });
+        }
+        function eliminarAutor(id) {
+            if (confirm("¿Seguro?")) {
+                $.ajax({
+                    url: API_AUTORES,
+                    type: 'DELETE',
+                    data: { id: id },
+                    success: function (res) {
+                        alert("Eliminado");
+                        listarAutores();
+                    }
+                });
+            }
+        }
+
+        function eliminarLibro(id) {
+            if (confirm("¿Seguro?")) {
+                $.ajax({
+                    url: API_LIBROS,
+                    type: 'DELETE',
+                    data: { id: id },
+                    success: function () {
+                        alert("Libro eliminado");
+                        listarLibros();
+                    }
+                });
+            }
+        }
+
+        function dibujarTablaAutores(data) {
+            let html = '';
+            let options = '<option value="">Seleccione un autor...</option>';
+
+            if (data.length === 0) {
+                html = '<tr><td colspan="5" style="text-align:center;">No se encontraron autores</td></tr>';
+            } else {
+                data.forEach(a => {
+                    let autorJson = JSON.stringify(a).replace(/'/g, "&apos;");
+                    html += `<tr>
+                <td>${a.ID}</td>
+                <td>${a.NOMBRE}</td>
+                <td>${a.APELLIDO}</td>
+                <td>${a.CORREO}</td>
+                <td>
+                    <button class="btn-edit" onclick='prepararEdicionAutor(${autorJson})'>Editar</button>
+                    <button class="btn-delete" onclick="eliminarAutor('${a.ID}')">Borrar</button>
+                </td>
+            </tr>`;
+                    options += `<option value="${a.ID}">${a.NOMBRE} ${a.APELLIDO}</option>`;
+                });
+            }
+            $('#cuerpoAutores').html(html);
+            $('#comboAutores').html(options);
+        }
+
+        function dibujarTablaLibros(data) {
+            let html = '';
+            if (data.length === 0) {
+                html = '<tr><td colspan="5" style="text-align:center;">No se encontraron libros</td></tr>';
+            } else {
+                data.forEach(l => {
+                    let libroJson = JSON.stringify(l).replace(/'/g, "&apos;");
+                    html += `<tr>
+                <td>${l.ID}</td>
+                <td>${l.TITULO}</td>
+                <td>${l.ANIO}</td>
+                <td>
+                    <button class="btn-edit" onclick='prepararEdicionLibro(${libroJson})'>Editar</button>
+                    <button class="btn-delete" onclick="eliminarLibro('${l.ID}')">Borrar</button>
+                </td>
+            </tr>`;
+                });
+            }
+            $('#cuerpoLibros').html(html);
+        }
+    </script>
+</body>
+
+</html>
