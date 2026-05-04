@@ -1,0 +1,211 @@
+<?php
+class conexion{
+public function conectar(){
+try{
+$conexion = new PDO("mysql:host=localhost;dbname=quinto","root","");
+return $conexion;
+}
+catch(PDOException $e){
+die("error de conexion".$e->getMessage());
+}
+}
+}
+?>
+<?php
+include_once "conexion.php";
+class crudLibros{
+public static function listarLibros(){
+$con= new conexion();
+$conexion=$con->conectar();
+$listar="select * from libros";
+$resultado= $conexion->prepare($listar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+
+public static function insertarLibros(){
+$con= new conexion();
+$conexion=$con->conectar();
+$id_libro=$_POST['id_libro'];
+$titulo=$_POST['titulo'];
+$anio_publicacion=$_POST['anio_publicacion'];
+$id_autor=$_POST['id_autor'];
+
+$insertar="insert into libros values ('$id_libro','$titulo','$anio_publicacion','$id_autor')";
+$resultado=$conexion->prepare($insertar);
+$resultado->execute();
+echo json_encode(["se inserto"]);
+
+}
+
+
+public static function actualizarLibros(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$id_libro=$_GET['id_libro'];
+$titulo=$_GET['titulo'];
+$anio_publicacion=$_GET['anio_publicacion'];
+$id_autor=$_GET['id_autor'];
+
+$actualizar="update libros set titulo='$titulo',anio_publicacion='$anio_publicacion',id_autor='$id_autor' where id_libro='$id_libro'";
+$resultado=$conexion->prepare($actualizar);
+$resultado->execute();
+echo json_encode(["se actualizo"]);
+
+}
+
+
+public static function eliminarLibros(){
+$con= new conexion();
+$conexion=$con->conectar();
+$id_libro=$_GET['id_libro'];
+$eliminar="delete from libros where id_libro='$id_libro'";
+
+$resultado=$conexion->prepare($eliminar);
+$resultado->execute();
+echo json_encode(["se elimino"]);
+
+}
+
+
+public static function buscarLibros(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+    $titulo = $_GET['titulo'];
+
+    $buscar = "SELECT 
+                l.id_libro,
+                l.titulo,
+                l.anio_publicacion,
+                a.id_Autor,
+                a.nombre,
+                a.apellido
+            FROM libros l
+            INNER JOIN autores a ON l.id_autor = a.id_Autor
+            WHERE l.titulo ='$titulo'";
+
+    $resultado = $conexion->prepare($buscar);
+    $resultado->execute();
+
+    $data = $resultado->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode($data);
+}
+
+}
+?>
+<?php
+include_once "conexion.php";
+class crudAutores{
+public static function listarAutores(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$listar="select * from autores";
+$resultado = $conexion->prepare($listar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+
+public static function insertarAutores(){
+$con= new conexion();
+$conexion=$con->conectar();
+$id_Autor=$_POST['id_Autor'];
+$nombre=$_POST['nombre'];
+$apellido=$_POST['apellido'];
+$correo=$_POST['correo'];
+$insertar="insert into autores values('$id_Autor','$nombre','$apellido','$correo') ";
+$resultado=$conexion->prepare($insertar);
+$resultado->execute();
+echo json_encode(["se inserto"]);
+
+}
+
+
+public static function actualizarAutores(){
+$con= new conexion();
+$conexion=$con->conectar();
+$id_Autor=$_GET['id_Autor'];
+$nombre=$_GET['nombre'];
+$apellido=$_GET['apellido'];
+$correo=$_GET['correo'];
+
+$actualizar="update autores set nombre='$nombre',apellido='$apellido',correo='$correo' where id_Autor='$id_Autor'";
+$resultado= $conexion->prepare($actualizar);
+$resultado->execute();
+
+echo json_encode(["se actualizo"]);
+}
+
+
+public static function eliminarAutores(){
+$con= new conexion();
+$conexion=$con->conectar();
+$id_Autor=$_GET['id_Autor'];
+
+$eliminar="delete from autores where id_Autor='$id_Autor'";
+$resultado=$conexion->prepare($eliminar);
+$resultado->execute();
+echo json_encode(["se elimino"]);
+}
+
+
+public static function buscarAutores(){
+$con= new conexion();
+$conexion=$con->conectar();
+$nombre=$_GET['nombre'];
+
+$buscar="SELECT 
+                a.id_Autor,
+                a.nombre,
+                a.apellido,
+                a.correo,
+                l.id_libro,
+                l.titulo
+            FROM autores a
+            INNER JOIN libros l ON a.id_Autor = l.id_autor
+            WHERE a.nombre = '$nombre' ";
+$resultado= $conexion->prepare($buscar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+
+}
+
+<?php
+include_once "crudAutores.php";
+
+$opc = $_SERVER['REQUEST_METHOD'];
+
+switch($opc){
+
+    case 'GET':
+        if(isset($_GET['nombre']) && $_GET['nombre'] !== ""){
+            crudAutores::buscarAutores();
+        } else {
+            crudAutores::listarAutores();
+        }
+    break;
+
+    case 'POST':
+        crudAutores::insertarAutores();
+    break;
+
+    case 'PUT':
+        crudAutores::actualizarAutores();
+    break;
+
+    case 'DELETE':
+        crudAutores::eliminarAutores();
+    break;
+
+    default:
+        echo json_encode(["mensaje" => "Metodo no permitido"]);
+    break;
+}
+?>
+

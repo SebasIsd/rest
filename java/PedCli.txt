@@ -1,0 +1,791 @@
+public class Pedido {
+    private String idPedido;
+    private String idCliente;
+    private String producto;
+}
+public class Cliente {
+   private String cedula;
+   private String nombre;
+   private String apellido;
+}
+============================================
+public class pedidosController {
+    private static final String API_URL = "http://localhost/reptom/apiPedidos.php";
+    private static final HttpClient client = HttpClient.newHttpClient();
+
+    public static String listar() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .GET()
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static String insertar(Pedido a) {
+    try {
+        String body = "idPedido=" + encode(a.getIdPedido(), "UTF-8")
+                + "&idCliente=" + encode(a.getIdCliente(), "UTF-8")
+                + "&producto=" + encode(a.getProducto(), "UTF-8");
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception e) {
+        return null;
+    }
+}
+
+public static String eliminar(String id) {
+    try {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + "?idPedido=" + encode(id, "UTF-8")))
+                .DELETE()
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception ex) {
+        return null;
+    }
+}
+
+public static String actualizar(Pedido a) {
+    try {
+        String params = "?idPedido=" + encode(a.getIdPedido(), "UTF-8")
+                + "&idCliente=" + encode(a.getIdCliente(), "UTF-8")
+                + "&producto=" + encode(a.getProducto(), "UTF-8");
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + params))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .method("PUT", HttpRequest.BodyPublishers.noBody())
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception ex) {
+        return null;
+    }
+}
+
+public static String buscar(String nombre) {
+    try {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + "?idPedido=" + encode(nombre, "UTF-8")))
+                .GET()
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception e) {
+        return "[]";
+    }
+}
+}
+==========================================
+public class clientesController {
+    private static final String API_URL = "http://localhost/reptom/apiClientes.php";
+    private static final HttpClient client = HttpClient.newHttpClient();
+
+    public static String listar() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .GET()
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static String insertar(Cliente a) {
+        try {
+            String body = "cedula=" + encode(a.getCedula(), "UTF-8")
+                    + "&nombre=" + encode(a.getNombre(), "UTF-8")
+                    + "&apellido=" + encode(a.getApellido(), "UTF-8");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String eliminar(String id) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?cedula=" + encode(id, "UTF-8")))
+                    .DELETE()
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            System.out.println("Error ELIMINAR: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    public static String actualizar(Cliente a) {
+        try {
+            String params = "?cedula=" + encode(a.getCedula(), "UTF-8")
+                    + "&nombre=" + encode(a.getNombre(), "UTF-8")
+                    + "&apellido=" + encode(a.getApellido(), "UTF-8");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + params))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .method("PUT", HttpRequest.BodyPublishers.noBody())
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            System.out.println("Error ACTUALIZAR: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    public static String buscar(String nombre) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?nombre=" + encode(nombre, "UTF-8")))
+                    .GET()
+                    .build();
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+}
+===============================================
+@WebServlet(name = "ClientesServlet", urlPatterns = {"/clientes"})
+public class ClientesServlet extends HttpServlet {
+    private Gson gson = new Gson();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String accion = request.getParameter("accion");
+
+        if (accion == null) {
+            String json = clientesController.listar();
+            Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> mapaLista = gson.fromJson(json, tipo);
+            List<Cliente> lista = new ArrayList<>();
+            for (Map<String, Object> m : mapaLista) {
+                lista.add(new Cliente(
+                    String.valueOf(m.get("cedula")),
+                    String.valueOf(m.get("nombre")),
+                    String.valueOf(m.get("apellido"))
+                ));
+            }
+            request.setAttribute("clientes", lista);
+            request.getRequestDispatcher("/listarClientes.jsp").forward(request, response);
+        }
+        else if ("buscar".equals(accion)) {
+            String nombre = request.getParameter("nombre");
+            String json = clientesController.buscar(nombre);
+            Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> lista = gson.fromJson(json, tipo);
+            request.setAttribute("clientes", lista);
+            request.getRequestDispatcher("/listarClientes.jsp").forward(request, response);
+        }
+        else if ("irAgregar".equals(accion)) {
+            request.getRequestDispatcher("/agregarCliente.jsp").forward(request, response);
+        }
+        else if ("editar".equals(accion)) {
+            String id = request.getParameter("cedula");
+            String json = clientesController.listar();
+            Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> mapaLista = gson.fromJson(json, tipo);
+            Cliente encontrado = null;
+            for (Map<String, Object> m : mapaLista) {
+                if (String.valueOf(m.get("cedula")).equals(id)) {
+                    encontrado = new Cliente(
+                        String.valueOf(m.get("cedula")),
+                        String.valueOf(m.get("nombre")),
+                        String.valueOf(m.get("apellido"))
+                    );
+                    break;
+                }
+            }
+            request.setAttribute("cliente", encontrado);
+            request.getRequestDispatcher("/editarCliente.jsp").forward(request, response);
+        }
+        else if ("eliminar".equals(accion)) {
+            String id = request.getParameter("cedula");
+            clientesController.eliminar(id);
+            response.sendRedirect("clientes");
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String accion = request.getParameter("accion");
+
+        if ("crear".equals(accion)) {
+            Cliente c = new Cliente(
+                request.getParameter("cedula"),
+                request.getParameter("nombre"),
+                request.getParameter("apellido")
+            );
+            clientesController.insertar(c);
+        }
+        else if ("actualizar".equals(accion)) {
+            Cliente c = new Cliente(
+                request.getParameter("cedula"),
+                request.getParameter("nombre"),
+                request.getParameter("apellido")
+            );
+            clientesController.actualizar(c);
+        }
+        response.sendRedirect("clientes");
+    }
+}
+==================================================
+@WebServlet(name = "PedidosServlet", urlPatterns = {"/pedidos"})
+public class PedidosServlet extends HttpServlet {
+
+    private Gson gson = new Gson();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String accion = request.getParameter("accion");
+
+        if (accion == null) {
+            String json = pedidosController.listar();
+            List<Pedido> lista = gson.fromJson(json,
+                    new TypeToken<List<Pedido>>(){}.getType());
+            request.setAttribute("pedidos", lista);
+            request.getRequestDispatcher("/listarPedidos.jsp").forward(request, response);
+        }
+        else if ("buscar".equals(accion)) {
+            String nombre = request.getParameter("nombre");
+            String json = pedidosController.buscar(nombre);
+            Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> lista = gson.fromJson(json, tipo);
+            request.setAttribute("pedidos", lista);
+            request.getRequestDispatcher("/listarPedidos.jsp").forward(request, response);
+        }
+        else if ("irAgregar".equals(accion)) {
+            String jsonClientes = clientesController.listar();
+            Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> mapaLista = gson.fromJson(jsonClientes, tipo);
+            List<Cliente> clientesList = new ArrayList<>();
+            for (Map<String, Object> m : mapaLista) {
+                clientesList.add(new Cliente(
+                    String.valueOf(m.get("cedula")),
+                    String.valueOf(m.get("nombre")),
+                    String.valueOf(m.get("apellido"))
+                ));
+            }
+            request.setAttribute("clientes", clientesList);
+            request.getRequestDispatcher("/agregarPedido.jsp").forward(request, response);
+        }
+        else if ("editar".equals(accion)) {
+            String id = request.getParameter("idPedido");
+            String json = pedidosController.listar();
+            List<Pedido> mapaLista = gson.fromJson(json,
+                    new TypeToken<List<Pedido>>(){}.getType());
+            Pedido encontrado = null;
+            for (Pedido p : mapaLista) {
+                if (p.getIdPedido().equals(id)) {
+                    encontrado = p;
+                    break;
+                }
+            }
+            String jsonClientes = clientesController.listar();
+            Type tipoClientes = new TypeToken<List<Map<String, Object>>>(){}.getType();
+            List<Map<String, Object>> mapaClientes = gson.fromJson(jsonClientes, tipoClientes);
+            List<Cliente> clientesList = new ArrayList<>();
+            for (Map<String, Object> m : mapaClientes) {
+                clientesList.add(new Cliente(
+                    String.valueOf(m.get("cedula")),
+                    String.valueOf(m.get("nombre")),
+                    String.valueOf(m.get("apellido"))
+                ));
+            }
+            request.setAttribute("pedido", encontrado);
+            request.setAttribute("clientes", clientesList);
+            request.getRequestDispatcher("/editarPedido.jsp").forward(request, response);
+        }
+        else if ("eliminar".equals(accion)) {
+            String id = request.getParameter("idPedido");
+            pedidosController.eliminar(id);
+            response.sendRedirect("pedidos");
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String accion = request.getParameter("accion");
+
+        if ("crear".equals(accion)) {
+            Pedido p = new Pedido(
+                request.getParameter("idPedido"),
+                request.getParameter("cedula"),
+                request.getParameter("producto")
+            );
+            pedidosController.insertar(p);
+        }
+        else if ("actualizar".equals(accion)) {
+            Pedido p = new Pedido(
+                request.getParameter("idPedido"),
+                request.getParameter("cedula"),
+                request.getParameter("producto")
+            );
+            pedidosController.actualizar(p);
+        }
+        response.sendRedirect("pedidos");
+    }
+}
+==============================================
+<%@page import="java.util.*"%>
+<%@page import="modelo.Cliente"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Clientes</h2>
+
+<form action="clientes" method="get">
+    <input type="hidden" name="accion" value="buscar">
+    <input type="text" name="nombre" placeholder="Buscar nombre">
+    <button>Buscar</button>
+</form>
+<a href="clientes">Mostrar todos</a>
+<a href="clientes?accion=irAgregar">Agregar</a>
+<hr>
+
+<%
+String accion = request.getParameter("accion");
+
+if ("buscar".equals(accion)) {
+    List<Map<String, Object>> lista = (List<Map<String, Object>>) request.getAttribute("clientes");
+    if (lista != null && !lista.isEmpty()) {
+        for (Map<String, Object> m : lista) {
+%>
+<p>
+    <b>Cliente:</b> <%= m.get("nombre") %> <%= m.get("apellido") %><br>
+    <b>Pedido:</b> <%= m.get("idPedido") %><br>
+    <b>Producto:</b> <%= m.get("producto") %><br>
+</p>
+<hr>
+<%
+        }
+    } else {
+%>
+<p>No se encontraron resultados</p>
+<%
+    }
+} else {
+    List<Cliente> lista = (List<Cliente>) request.getAttribute("clientes");
+%>
+<table border="1">
+<tr>
+    <th>Cedula</th><th>Nombre</th><th>Apellido</th><th>Acciones</th>
+</tr>
+<%
+if (lista != null) {
+    for (Cliente c : lista) {
+%>
+<tr>
+    <td><%= c.getCedula() %></td>
+    <td><%= c.getNombre() %></td>
+    <td><%= c.getApellido() %></td>
+    <td>
+        <a href="clientes?accion=editar&cedula=<%= c.getCedula() %>">Editar</a>
+        <a href="clientes?accion=eliminar&cedula=<%= c.getCedula() %>">Eliminar</a>
+    </td>
+</tr>
+<%
+    }
+}
+%>
+</table>
+<%
+}
+%>
+===========================================
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Agregar Cliente</h2>
+<form action="clientes" method="post">
+    <input type="hidden" name="accion" value="crear">
+
+    Cedula: <input name="cedula"><br>
+    Nombre: <input name="nombre"><br>
+    Apellido: <input name="apellido"><br>
+
+    <button>Guardar</button>
+</form>
+<a href="clientes">Volver</a>
+==============================================
+<%@page import="modelo.Cliente"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<%
+Cliente c = (Cliente) request.getAttribute("cliente");
+%>
+
+<h2>Editar Cliente</h2>
+<form id="formEditar">
+
+    Cedula: <input id="cedula" value="<%= c.getCedula() %>" readonly><br>
+    Nombre: <input id="nombre" value="<%= c.getNombre() %>"><br>
+    Apellido: <input id="apellido" value="<%= c.getApellido() %>"><br>
+
+    <button type="button" onclick="actualizar()">Actualizar</button>
+</form>
+
+<script>
+function actualizar() {
+    const params = new URLSearchParams({
+        accion: "actualizar",
+        cedula: document.getElementById('cedula').value,
+        nombre: document.getElementById('nombre').value,
+        apellido: document.getElementById('apellido').value
+    });
+    fetch('clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert("Actualizado correctamente");
+        window.location.href = 'clientes';
+    })
+    .catch(error => console.error(error));
+}
+</script>
+<a href="clientes">Volver</a>
+===============================================
+<%@page import="java.util.*"%>
+<%@page import="modelo.Pedido"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Pedidos</h2>
+<form action="pedidos" method="get">
+    <input type="hidden" name="accion" value="buscar">
+    <input type="text" name="nombre" placeholder="Buscar ID pedido">
+    <button>Buscar</button>
+</form>
+<a href="pedidos">Mostrar todos</a>
+<a href="pedidos?accion=irAgregar">Agregar</a>
+<hr>
+
+<%
+String accion = request.getParameter("accion");
+
+if ("buscar".equals(accion)) {
+    List<Map<String, Object>> lista = (List<Map<String, Object>>) request.getAttribute("pedidos");
+    if (lista != null && !lista.isEmpty()) {
+        for (Map<String, Object> m : lista) {
+%>
+<p>
+    <b>Pedido:</b> <%= m.get("idPedido") %><br>
+    <b>Cliente:</b> <%= m.get("nombre") %> <%= m.get("apellido") %><br>
+    <b>Producto:</b> <%= m.get("producto") %><br>
+</p>
+<hr>
+<%
+        }
+    } else {
+%>
+<p>No se encontraron resultados</p>
+<%
+    }
+} else {
+    List<Pedido> lista = (List<Pedido>) request.getAttribute("pedidos");
+%>
+<table border="1">
+<tr>
+    <th>ID Pedido</th><th>ID Cliente</th><th>Producto</th><th>Acciones</th>
+</tr>
+<%
+if (lista != null) {
+    for (Pedido p : lista) {
+%>
+<tr>
+    <td><%= p.getIdPedido() %></td>
+    <td><%= p.getIdCliente() %></td>
+    <td><%= p.getProducto() %></td>
+    <td>
+        <a href="pedidos?accion=editar&idPedido=<%= p.getIdPedido() %>">Editar</a>
+        <a href="pedidos?accion=eliminar&idPedido=<%= p.getIdPedido() %>">Eliminar</a>
+    </td>
+</tr>
+<%
+    }
+}
+%>
+</table>
+<%
+}
+%>
+==========================================
+<%@page import="java.util.*"%>
+<%@page import="modelo.Cliente"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<%
+List<Cliente> clientesList = (List<Cliente>) request.getAttribute("clientes");
+%>
+
+<h2>Agregar Pedido</h2>
+<form action="pedidos" method="post">
+    <input type="hidden" name="accion" value="crear">
+
+    ID Pedido: <input name="idPedido"><br>
+
+    Cliente:
+    <select name="cedula">
+        <% if (clientesList != null) { for (Cliente c : clientesList) { %>
+        <option value="<%= c.getCedula() %>">
+            <%= c.getNombre() %> <%= c.getApellido() %>
+        </option>
+        <% } } %>
+    </select><br>
+
+    Producto:
+    <select name="producto">
+        <option value="Laptop">Laptop</option>
+        <option value="Mouse">Mouse</option>
+        <option value="Teclado">Teclado</option>
+        <option value="Monitor">Monitor</option>
+        <option value="Auriculares">Auriculares</option>
+    </select><br>
+
+    <button>Guardar</button>
+</form>
+<a href="pedidos">Volver</a>
+==========================================================
+<%@page import="java.util.*"%>
+<%@page import="modelo.Cliente"%>
+<%@page import="modelo.Pedido"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<%
+Pedido p = (Pedido) request.getAttribute("pedido");
+List<Cliente> clientesList = (List<Cliente>) request.getAttribute("clientes");
+%>
+
+<h2>Editar Pedido</h2>
+<form id="formEditar">
+
+    ID Pedido: <input id="idPedido" value="<%= p.getIdPedido() %>" readonly><br>
+
+    Cliente:
+    <select id="cedula">
+        <% if (clientesList != null) { for (Cliente c : clientesList) {
+            String selected = c.getCedula().equals(p.getIdCliente()) ? "selected" : "";
+        %>
+        <option value="<%= c.getCedula() %>" <%= selected %>>
+            <%= c.getNombre() %> <%= c.getApellido() %>
+        </option>
+        <% } } %>
+    </select><br>
+
+    Producto:
+    <select id="producto">
+        <option value="Laptop"      <%= "Laptop".equals(p.getProducto())      ? "selected" : "" %>>Laptop</option>
+        <option value="Mouse"       <%= "Mouse".equals(p.getProducto())       ? "selected" : "" %>>Mouse</option>
+        <option value="Teclado"     <%= "Teclado".equals(p.getProducto())     ? "selected" : "" %>>Teclado</option>
+        <option value="Monitor"     <%= "Monitor".equals(p.getProducto())     ? "selected" : "" %>>Monitor</option>
+        <option value="Auriculares" <%= "Auriculares".equals(p.getProducto()) ? "selected" : "" %>>Auriculares</option>
+    </select><br>
+
+    <button type="button" onclick="actualizar()">Actualizar</button>
+</form>
+
+<script>
+function actualizar() {
+    const params = new URLSearchParams({
+        accion: "actualizar",
+        idPedido: document.getElementById('idPedido').value,
+        cedula: document.getElementById('cedula').value,
+        producto: document.getElementById('producto').value
+    });
+    fetch('pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert("Actualizado correctamente");
+        window.location.href = 'pedidos';
+    })
+    .catch(error => console.error(error));
+}
+</script>
+<a href="pedidos">Volver</a>
+=================================================
+<?php
+
+include_once "crudPedidos.php";
+
+$opc=$_SERVER['REQUEST_METHOD'];
+switch ($opc) {
+    case 'GET':
+        if (isset($_GET['idPedido']) && $_GET['idPedido'] !== "") {
+           crudPedidos::buscar();
+        }else{
+           crudPedidos::listar(); 
+        }
+        break;
+    case 'POST':
+        crudPedidos::insertar();
+        break;
+    case 'PUT':
+        crudPedidos::actualizar();
+        break;
+    case 'DELETE':
+        
+        break;
+    default:
+        # code...
+        break;
+}
+
+<?php
+
+include_once "conexion.php";
+class crudPedidos{
+public static function listar(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$listar="select * from pedidos";
+$resultado= $conexion->prepare($listar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+
+public static function insertar(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$idPedido=$_POST['idPedido'];
+$idCliente=$_POST['idCliente'];
+$producto=$_POST['producto'];
+
+$insertar="insert into pedidos values ('$idPedido','$idCliente','$producto')";
+$resultado=$conexion->prepare($insertar);
+$resultado->execute();
+echo json_encode(["se inserto"]);
+}
+public static function actualizar(){
+$con= new conexion();
+$conexion=$con->conectar();
+$idPedido=$_GET['idPedido'];
+$idCliente=$_GET['idCliente'];
+$producto=$_GET['producto'];
+
+$actualizar="update pedidos set idCliente='$idCliente',producto='$producto' where idPedido='$idPedido'";
+$resultado=$conexion->prepare($actualizar);
+$resultado->execute();
+echo json_encode(["se actualizo"]);
+}
+public static function buscar(){
+$con= new conexion();
+$conexion=$con->conectar();
+ $idPedido=$_GET['idPedido'];
+                $buscar="SELECT p.idPedido,
+                p.idCliente,
+                p.producto,
+                c.cedula,
+                c.nombre,
+                c.apellido
+        FROM pedidos p
+        INNER JOIN clientes c ON c.cedula = p.idCliente
+        WHERE p.idPedido='$idPedido'";
+$resultado= $conexion->prepare($buscar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+}
+==========================
+<?php
+
+include_once "crudClientes.php";
+
+$opc=$_SERVER['REQUEST_METHOD'];
+switch ($opc) {
+    case 'GET':
+        if (isset($_GET['nombre']) && $_GET['nombre'] !== "") {
+           crudClientes::buscar();
+        }else{
+           crudClientes::listar(); 
+        }
+        break;
+    case 'POST':
+        crudClientes::insertar();
+        break;
+    case 'PUT':
+        crudClientes::actualizar();
+        break;
+    case 'DELETE':
+        crudClientes::eliminar();
+        break;
+    default:
+        # code...
+        break;
+}
+<?php
+
+include_once "conexion.php";
+class crudClientes{
+public static function listar(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$listar="select * from clientes";
+$resultado= $conexion->prepare($listar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+
+public static function insertar(){
+$con= new conexion();
+$conexion=$con->conectar();
+
+$cedula=$_POST['cedula'];
+$nombre=$_POST['nombre'];
+$apellido=$_POST['apellido'];
+
+$insertar="insert into clientes values ('$cedula','$nombre','$apellido')";
+$resultado=$conexion->prepare($insertar);
+$resultado->execute();
+echo json_encode(["se inserto"]);
+}
+public static function actualizar(){
+$con= new conexion();
+$conexion=$con->conectar();
+$cedula=$_GET['cedula'];
+$nombre=$_GET['nombre'];
+$apellido=$_GET['apellido'];
+
+$actualizar="update clientes set nombre='$nombre',apellido='$apellido' where cedula='$cedula'";
+$resultado=$conexion->prepare($actualizar);
+$resultado->execute();
+echo json_encode(["se actualizo"]);
+}
+public static function buscar(){
+$con= new conexion();
+$conexion=$con->conectar();
+ $nombre=$_GET['nombre'];
+$buscar="select c.cedula,c.nombre,c.apellido,p.idPedido,
+                p.idCliente,p.producto from clientes c
+                inner join pedidos p on c.cedula=p.idCliente
+                where c.nombre='$nombre'";
+$resultado= $conexion->prepare($buscar);
+$resultado->execute();
+$data=$resultado->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($data);
+}
+}

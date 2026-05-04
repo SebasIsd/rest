@@ -1,0 +1,718 @@
+@WebServlet(name = "LibroServlet", urlPatterns = {"/libros"})
+public class LibroServlet extends HttpServlet {
+
+    private Gson gson = new Gson();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String accion = request.getParameter("accion");
+
+        
+        if (accion == null) {
+
+            String json = librosController.listar();
+
+            List<libros> lista = gson.fromJson(json,
+                    new TypeToken<List<libros>>(){}.getType());
+
+            request.setAttribute("libros", lista);
+            request.getRequestDispatcher("/listarLibros.jsp").forward(request, response);
+        }
+
+        else if ("buscar".equals(accion)) {
+
+            String titulo = request.getParameter("titulo");
+            String json = librosController.buscar(titulo);
+
+             Type tipo = new TypeToken<List<Map<String, Object>>>() {
+            }.getType();
+            List<Map<String, Object>> lista = gson.fromJson(json, tipo);
+
+            request.setAttribute("libros", lista);
+            request.getRequestDispatcher("/listarLibros.jsp").forward(request, response);
+        }
+
+       else if ("irAgregar".equals(accion)) {
+
+    String json = autoresController.listar();
+    List<autores> autoresList = gson.fromJson(json,
+            new TypeToken<List<autores>>(){}.getType());
+    request.setAttribute("autores", autoresList);
+    request.getRequestDispatcher("/agregarLibro.jsp").forward(request, response);
+}
+
+      else if ("editar".equals(accion)) {
+    String id = request.getParameter("id_libro");
+
+    String json = librosController.listar();
+    Type tipo = new TypeToken<List<Map<String, Object>>>(){}.getType();
+    List<Map<String, Object>> mapaLista = gson.fromJson(json, tipo);
+    libros encontrado = null;
+    for (Map<String, Object> m : mapaLista) {
+        if (String.valueOf(m.get("id_libro")).equals(id)) {
+            encontrado = new libros(
+                String.valueOf(m.get("id_libro")),
+                String.valueOf(m.get("titulo")),
+                String.valueOf(m.get("anio_publicacion")),
+                String.valueOf(m.get("id_autor"))
+            );
+            break;
+        }
+    }
+
+   
+    String jsonAutores = autoresController.listar();
+    List<autores> autoresList = gson.fromJson(jsonAutores,
+            new TypeToken<List<autores>>(){}.getType());
+
+    request.setAttribute("libro", encontrado);
+    request.setAttribute("autores", autoresList);
+    request.getRequestDispatcher("/editarLibro.jsp").forward(request, response);
+}
+
+        // ELIMINAR
+        else if ("eliminar".equals(accion)) {
+
+            String id = request.getParameter("id_libro");
+            librosController.eliminar(id);
+
+            response.sendRedirect("libros");
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String accion = request.getParameter("accion");
+
+        // CREAR
+        if ("crear".equals(accion)) {
+
+            libros l = new libros(
+                    request.getParameter("id_libro"),
+                    request.getParameter("titulo"),
+                    request.getParameter("anio_publicacion"),
+                    request.getParameter("id_autor")
+            );
+
+            librosController.insertar(l);
+        }
+
+        // ACTUALIZAR
+        else if ("actualizar".equals(accion)) {
+
+            libros l = new libros(
+                    request.getParameter("id_libro"),
+                    request.getParameter("titulo"),
+                    request.getParameter("anio_publicacion"),
+                    request.getParameter("id_autor")
+            );
+
+            librosController.actualizar(l);
+        }
+
+        response.sendRedirect("libros");
+    }
+}
+
+
+
+@WebServlet(name = "AutoresServlet", urlPatterns = {"/autores"})
+public class AutoresServlet extends HttpServlet {
+
+    private Gson gson = new Gson();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String accion = request.getParameter("accion");
+
+        // LISTAR
+        if (accion == null) {
+
+            String json = autoresController.listar();
+
+            List<autores> lista = gson.fromJson(json,
+                    new TypeToken<List<autores>>() {
+                    }.getType());
+
+            request.setAttribute("autores", lista);
+            request.getRequestDispatcher("/listarAutores.jsp").forward(request, response);
+        } // BUSCAR
+        else if ("buscar".equals(accion)) {
+
+            String nombre = request.getParameter("nombre");
+            String json = autoresController.buscar(nombre);
+
+            Type tipo = new TypeToken<List<Map<String, Object>>>() {
+            }.getType();
+            List<Map<String, Object>> lista = gson.fromJson(json, tipo);
+
+            request.setAttribute("autores", lista);
+            request.getRequestDispatcher("/listarAutores.jsp").forward(request, response);
+        } // IR AGREGAR
+        else if ("irAgregar".equals(accion)) {
+            request.getRequestDispatcher("/agregarAutor.jsp").forward(request, response);
+        } // EDITAR
+        else if ("editar".equals(accion)) {
+
+            String id = request.getParameter("id_Autor");
+            String json = autoresController.listar();
+
+            List<autores> lista = gson.fromJson(json,
+                    new TypeToken<List<autores>>() {
+                    }.getType());
+
+            autores encontrado = null;
+
+            for (autores a : lista) {
+                if (a.getId_Autor().equals(id)) {
+                    encontrado = a;
+                    break;
+                }
+            }
+
+            request.setAttribute("autor", encontrado);
+            request.getRequestDispatcher("/editarAutor.jsp").forward(request, response);
+        } // ELIMINAR
+        else if ("eliminar".equals(accion)) {
+
+            String id = request.getParameter("id_Autor");
+            autoresController.eliminar(id);
+
+            response.sendRedirect("autores");
+            return;
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String accion = request.getParameter("accion");
+
+        // CREAR
+        if ("crear".equals(accion)) {
+
+            autores a = new autores(
+                    request.getParameter("id_Autor"),
+                    request.getParameter("nombre"),
+                    request.getParameter("apellido"),
+                    request.getParameter("correo")
+            );
+
+            autoresController.insertar(a);
+        } // ACTUALIZAR
+        else if ("actualizar".equals(accion)) {
+
+            autores a = new autores(
+                    request.getParameter("id_Autor"),
+                    request.getParameter("nombre"),
+                    request.getParameter("apellido"),
+                    request.getParameter("correo")
+            );
+
+            autoresController.actualizar(a);
+        }
+
+        response.sendRedirect(request.getContextPath() + "/autores");
+    }
+}
+
+
+public class librosController {
+    private static final String API_URL="http://localhost/reptom/apiLibros.php";
+    private static final HttpClient client = HttpClient.newHttpClient();
+    
+public static String listar() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .GET()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static String insertar(libros l) {
+        try {
+            String body = "id_libro=" + encode(l.getId_libro())
+                    + "&titulo=" + encode(l.getTitulo())
+                    + "&anio_publicacion=" + encode(l.getAnio_publicacion())
+                    + "&id_autor=" + encode(l.getId_autor());
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String eliminar(String id) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?id_libro=" + encode(id)))
+                    .DELETE()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+     public static String buscar(String titulo) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?titulo=" + encode(titulo)))
+                    .GET()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+  public static String actualizar(libros l) {
+    try {
+        String params = "?id_libro=" + encode(l.getId_libro(), "UTF-8")
+                + "&titulo=" + encode(l.getTitulo(), "UTF-8")
+                + "&anio_publicacion=" + encode(l.getAnio_publicacion(), "UTF-8")
+                + "&id_autor=" + encode(l.getId_autor(), "UTF-8");
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + params))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .method("PUT", HttpRequest.BodyPublishers.noBody())
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception e) {
+        System.out.println("Error ACTUALIZAR libro: " + e.getMessage());
+        return null;
+    }
+}
+}
+
+
+public class autoresController {
+    private static final String API_URL = "http://localhost/reptom/apiAutores.php";
+    private static final HttpClient client = HttpClient.newHttpClient();
+
+    public static String listar() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .GET()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    public static String insertar(autores a) {
+        try {
+            String body = "id_Autor=" + encode(a.getId_Autor())
+                    + "&nombre=" + encode(a.getNombre())
+                    + "&apellido=" + encode(a.getApellido())
+                    + "&correo=" + encode(a.getCorreo());
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String eliminar(String id) {
+                try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?id_Autor=" + encode(id)))
+                    .DELETE()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception ex) {
+            System.out.println("Error ELIMINAR: " + ex.getMessage());
+            return null;
+        }
+  
+    }
+    
+ public static String actualizar(autores a) {
+    try {
+        String params = "?id_Autor=" + encode(a.getId_Autor(), "UTF-8")
+                + "&nombre=" + encode(a.getNombre(), "UTF-8")
+                + "&apellido=" + encode(a.getApellido(), "UTF-8")
+                + "&correo=" + encode(a.getCorreo(), "UTF-8");
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + params))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .method("PUT", HttpRequest.BodyPublishers.noBody()) 
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    } catch (Exception ex) {
+        System.out.println("Error ACTUALIZAR: " + ex.getMessage());
+        return null;
+    }
+
+}
+ public static String buscar(String nombre) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "?nombre=" + encode(nombre)))
+                    .GET()
+                    .build();
+
+            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+ 
+}
+
+<%@page import="java.util.*"%>
+<%@page import="modelo.libros"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Libros</h2>
+
+<form action="libros" method="get">
+    <input type="hidden" name="accion" value="buscar">
+    <input type="text" name="titulo" placeholder="Buscar título">
+    <button>Buscar</button>
+</form>
+<a href="libros">Mostrar todos</a>
+<a href="libros?accion=irAgregar">Agregar</a>
+<hr>
+
+<%
+String accion = request.getParameter("accion");
+%>
+
+<%
+if ("buscar".equals(accion)) {
+    List<libros> lista = (List<libros>) request.getAttribute("libros");
+    if (lista != null && !lista.isEmpty()) {
+        for (libros l : lista) {
+%>
+<p>
+    <b>Título:</b> <%= l.getTitulo() %><br>
+    <b>Año:</b> <%= l.getAnio_publicacion() %><br>
+    <b>ID Autor:</b> <%= l.getId_autor() %><br>
+</p>
+<hr>
+<%
+        }
+    } else {
+%>
+<p>No se encontraron resultados</p>
+<%
+    }
+}
+else {
+    List<libros> lista = (List<libros>) request.getAttribute("libros");
+%>
+<table border="1">
+<tr>
+    <th>ID</th><th>Título</th><th>Año</th><th>ID Autor</th><th>Acciones</th>
+</tr>
+<%
+if (lista != null) {
+    for (libros l : lista) {
+%>
+<tr>
+    <td><%= l.getId_libro() %></td>
+    <td><%= l.getTitulo() %></td>
+    <td><%= l.getAnio_publicacion() %></td>
+    <td><%= l.getId_autor() %></td>
+    <td>
+        <a href="libros?accion=editar&id_libro=<%= l.getId_libro() %>">Editar</a>
+        <a href="libros?accion=eliminar&id_libro=<%= l.getId_libro() %>">Eliminar</a>
+    </td>
+</tr>
+<%
+    }
+}
+%>
+</table>
+<%
+}
+%>
+
+
+<%@page import="java.util.*"%>
+<%@page import="modelo.autores"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Autores</h2>
+
+<form action="autores" method="get">
+    <input type="hidden" name="accion" value="buscar">
+    <input type="text" name="nombre" placeholder="Buscar nombre">
+    <button>Buscar</button>
+</form>
+
+<a href="autores">Mostrar todos</a>
+<a href="autores?accion=irAgregar">Agregar</a>
+
+<hr>
+
+<%
+String accion = request.getParameter("accion");
+%>
+
+<%
+
+if ("buscar".equals(accion)) {
+
+    List<Map<String, Object>> lista =
+        (List<Map<String, Object>>) request.getAttribute("autores");
+
+    if (lista != null && !lista.isEmpty()) {
+        for (Map<String, Object> e : lista) {
+%>
+
+<p>
+    <b>Autor:</b> <%= e.get("nombre") %> <%= e.get("apellido") %><br>
+    <b>Correo:</b> <%= e.get("correo") %><br>
+    <b>Libro:</b> <%= e.get("titulo") %><br>
+</p>
+<hr>
+
+<%
+        }
+    } else {
+%>
+<p>No se encontraron resultados</p>
+<%
+    }
+}
+
+
+else {
+
+    List<autores> lista = (List<autores>) request.getAttribute("autores");
+%>
+
+<table border="1">
+<tr>
+    <th>ID</th><th>Nombre</th><th>Apellido</th><th>Correo</th><th>Acciones</th>
+</tr>
+
+<%
+if (lista != null) {
+    for (autores a : lista) {
+%>
+
+<tr>
+    <td><%= a.getId_Autor() %></td>
+    <td><%= a.getNombre() %></td>
+    <td><%= a.getApellido() %></td>
+    <td><%= a.getCorreo() %></td>
+
+    <td>
+        <a href="autores?accion=editar&id_Autor=<%=a.getId_Autor()%>">Editar</a>
+
+<a href="autores?accion=eliminar&id_Autor=<%=a.getId_Autor()%>"
+   onclick="return confirm('¿Eliminar este autor?')">Eliminar</a>    
+    
+</tr>
+
+<%
+    }
+}
+%>
+</table>
+
+<%
+}
+%>
+
+
+<%@page import="java.util.*"%>
+<%@page import="modelo.autores"%>
+<%@page import="modelo.libros"%>
+<%
+libros l = (libros) request.getAttribute("libro");
+List<autores> autoresList = (List<autores>) request.getAttribute("autores");
+%>
+<h2>Editar Libro</h2>
+<form id="formEditar">
+    <input type="hidden" id="accion" value="actualizar">
+    ID: <input id="id_libro" name="id_libro" value="<%=l.getId_libro()%>" readonly><br>
+    Título: <input id="titulo" name="titulo" value="<%=l.getTitulo()%>"><br>
+    Año: <input id="anio_publicacion" name="anio_publicacion" value="<%=l.getAnio_publicacion()%>"><br>
+    
+    Autor:
+    <select id="id_autor">
+        <%
+        if (autoresList != null) {
+            for (autores a : autoresList) {
+                String selected = a.getId_Autor().equals(l.getId_autor()) ? "selected" : "";
+        %>
+        <option value="<%= a.getId_Autor() %>" <%= selected %>>
+            <%= a.getNombre() %> <%= a.getApellido() %>
+        </option>
+        <%
+            }
+        }
+        %>
+    </select><br>
+    
+    <button type="button" onclick="actualizar()">Actualizar</button>
+</form>
+<script>
+function actualizar() {
+    const params = new URLSearchParams({
+        accion: "actualizar",
+        id_libro: document.getElementById('id_libro').value,
+        titulo: document.getElementById('titulo').value,
+        anio_publicacion: document.getElementById('anio_publicacion').value,
+        id_autor: document.getElementById('id_autor').value
+    });
+    fetch('libros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert("Actualizado correctamente");
+        window.location.href = 'libros';
+    })
+    .catch(error => console.error(error));
+}
+</script>
+<a href="libros">Volver</a>
+
+
+<%@page import="modelo.autores"%>
+
+<%
+autores a = (autores) request.getAttribute("autor");
+%>
+
+<h2>Editar Autor</h2>
+
+<form id="formEditar">
+
+    <input type="hidden" id="accion" value="actualizar">
+    <input type="hidden" id="_method" value="PUT">
+
+    ID: <input id="id_Autor" name="id_Autor" value="<%=a.getId_Autor()%>" readonly><br>
+    Nombre: <input id="nombre" name="nombre" value="<%=a.getNombre()%>"><br>
+    Apellido: <input id="apellido" name="apellido" value="<%=a.getApellido()%>"><br>
+    Correo: <input id="correo" name="correo" value="<%=a.getCorreo()%>"><br>
+
+    <!-- IMPORTANTE: type="button" -->
+    <button type="button" onclick="actualizar()">Actualizar</button>
+</form>
+
+<script>
+function actualizar() {
+
+    const params = new URLSearchParams({
+        accion: "actualizar",        
+        _method: "PUT",              
+        id_Autor: document.getElementById('id_Autor').value,
+        nombre: document.getElementById('nombre').value,
+        apellido: document.getElementById('apellido').value,
+        correo: document.getElementById('correo').value
+    });
+
+    fetch('autores', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log("RESPUESTA:", data);
+        alert("Actualizado correctamente");
+        window.location.href = 'autores';
+    })
+    .catch(error => console.error(error));
+}
+</script>
+
+<a href="autores">Volver</a>
+
+
+<%@page import="java.util.*"%>
+<%@page import="modelo.autores"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<h2>Agregar libro</h2>
+<form action="libros" method="post">
+    <input type="hidden" name="accion" value="crear">
+    
+    ID: <input name="id_libro"><br>
+    Título: <input name="titulo"><br>
+    Año: <input name="anio_publicacion"><br>
+    
+    Autor:
+    <select name="id_autor">
+        <%
+        List<autores> autoresList = (List<autores>) request.getAttribute("autores");
+        if (autoresList != null) {
+            for (autores a : autoresList) {
+        %>
+        <option value="<%= a.getId_Autor() %>">
+            <%= a.getNombre() %> <%= a.getApellido() %>
+        </option>
+        <%
+            }
+        }
+        %>
+    </select><br>
+    
+    <button>Guardar</button>
+</form>
+<a href="libros">Volver</a>
+
+<h2>Agregar Autor</h2>
+
+<form action="autores" method="post">
+
+    <input type="hidden" name="accion" value="crear">
+
+    ID: <input name="id_Autor"><br>
+    Nombre: <input name="nombre"><br>
+    Apellido: <input name="apellido"><br>
+    Correo: <input name="correo"><br>
+
+    <button>Guardar</button>
+</form>
+
+<a href="autores">Volver</a>
