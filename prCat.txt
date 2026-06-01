@@ -1,0 +1,398 @@
+spring.application.name=productos-categorias
+spring.datasource.url=jdbc:mysql://localhost:3306/soa
+spring.datasource.username=root
+spring.datasource.password=
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+server.port=8083
+spring.thymeleaf.cache=false
+spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+========================================
+Entities
+package com.uta.repaso.entities;
+import jakarta.persistence.*;
+import java.util.List;
+@Entity
+@Table(name = "categorias")
+public class Categoria {
+@Id
+@Column(name = "idCategoria")
+private String idCategoria;
+@Column(name = "nombre")
+private String nombre;
+@Column(name = "descripcion")
+private String descripcion;
+@OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL)
+private List<Producto> productos;
+public Categoria() {}
+public String getIdCategoria() { return idCategoria; }
+public void setIdCategoria(String idCategoria) { this.idCategoria = idCategoria; }
+public String getNombre() { return nombre; }
+public void setNombre(String nombre) { this.nombre = nombre; }
+public String getDescripcion() { return descripcion; }
+public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+public List<Producto> getProductos() { return productos; }
+public void setProductos(List<Producto> productos) { this.productos = productos; }
+}
+========================================
+package com.uta.repaso.entities;
+import jakarta.persistence.*;
+@Entity
+@Table(name = "productos")
+public class Producto {
+@Id
+@Column(name = "idProducto")
+private String idProducto;
+@Column(name = "nombre")
+private String nombre;
+@Column(name = "precio")
+private Double precio;
+@ManyToOne
+@JoinColumn(name = "id_categoria")
+private Categoria categoria;
+public Producto() {}
+public String getIdProducto() { return idProducto; }
+public void setIdProducto(String idProducto) { this.idProducto = idProducto; }
+public String getNombre() { return nombre; }
+public void setNombre(String nombre) { this.nombre = nombre; }
+public Double getPrecio() { return precio; }
+public void setPrecio(Double precio) { this.precio = precio; }
+public Categoria getCategoria() { return categoria; }
+public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+}
+=================================
+repository
+package com.uta.repaso.repository;
+import com.uta.repaso.entities.Categoria;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+public interface CategoriaRepository extends JpaRepository<Categoria, String> {
+List<Categoria> findByNombre(String nombre);
+}
+========================================
+package com.uta.repaso.repository;
+import com.uta.repaso.entities.Producto;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+public interface ProductoRepository extends JpaRepository<Producto, String> {
+List<Producto> findByNombre(String nombre);
+}
+========================================
+services
+package com.uta.repaso.servicios;
+import com.uta.repaso.entities.Categoria;
+import java.util.List;
+public interface CategoriaService {
+List<Categoria> listar();
+void guardar(Categoria categoria);
+void eliminar(String idCategoria);
+List<Categoria> buscarPorNombre(String nombre);
+Categoria buscarPorId(String idCategoria);
+}
+========================================
+package com.uta.repaso.servicios;
+import com.uta.repaso.entities.Categoria;
+import com.uta.repaso.repository.CategoriaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+@Service
+public class CategoriaServiceImpl implements CategoriaService {
+@Autowired
+private CategoriaRepository repository;
+@Override
+public List<Categoria> listar() { return repository.findAll(); }
+@Override
+public void guardar(Categoria categoria) { repository.save(categoria); }
+@Override
+public void eliminar(String idCategoria) { repository.deleteById(idCategoria); }
+@Override
+public List<Categoria> buscarPorNombre(String nombre) { return repository.findByNombre(nombre); }
+@Override
+public Categoria buscarPorId(String idCategoria) { return repository.findById(idCategoria).orElse(null); }
+}
+========================================
+package com.uta.repaso.servicios;
+import com.uta.repaso.entities.Producto;
+import java.util.List;
+public interface ProductoService {
+List<Producto> listar();
+void guardar(Producto producto);
+void eliminar(String idProducto);
+List<Producto> buscarPorNombre(String nombre);
+Producto buscarPorId(String idProducto);
+}
+========================================
+package com.uta.repaso.servicios;
+import com.uta.repaso.entities.Producto;
+import com.uta.repaso.repository.ProductoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+@Service
+public class ProductoServiceImpl implements ProductoService {
+@Autowired
+private ProductoRepository repository;
+@Override
+public List<Producto> listar() { return repository.findAll(); }
+@Override
+public void guardar(Producto producto) { repository.save(producto); }
+@Override
+public void eliminar(String idProducto) { repository.deleteById(idProducto); }
+@Override
+public List<Producto> buscarPorNombre(String nombre) { return repository.findByNombre(nombre); }
+@Override
+public Producto buscarPorId(String idProducto) { return repository.findById(idProducto).orElse(null); }
+}
+============================
+controlador
+package com.uta.repaso.controller;
+import com.uta.repaso.entities.Categoria;
+import com.uta.repaso.servicios.CategoriaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+@Controller
+@RequestMapping("/categorias")
+public class CategoriaController {
+@Autowired
+private CategoriaService categoriaService;
+@GetMapping
+public String listar(Model model) {
+model.addAttribute("categoria", new Categoria());
+model.addAttribute("categorias", categoriaService.listar());
+return "categorias";
+}
+@PostMapping("/guardar")
+public String guardar(Categoria categoria) {
+categoriaService.guardar(categoria);
+return "redirect:/categorias";
+}
+@GetMapping("/buscar")
+public String buscar(@RequestParam String nombre, Model model) {
+List<Categoria> resultado = categoriaService.buscarPorNombre(nombre);
+model.addAttribute("categoria", new Categoria());
+model.addAttribute("categorias", categoriaService.listar());
+if (resultado != null && !resultado.isEmpty()) {
+model.addAttribute("categoriaEncontrada", resultado.get(0));
+model.addAttribute("productosCategoria", resultado.get(0).getProductos());
+}
+return "categorias";
+}
+@GetMapping("/editar/{id}")
+public String editar(@PathVariable String id, Model model) {
+model.addAttribute("categoria", categoriaService.buscarPorId(id));
+model.addAttribute("categorias", categoriaService.listar());
+return "categorias";
+}
+@GetMapping("/eliminar/{id}")
+public String eliminar(@PathVariable String id) {
+categoriaService.eliminar(id);
+return "redirect:/categorias";
+}
+}
+========================================
+package com.uta.repaso.controller;
+import com.uta.repaso.entities.Categoria;
+import com.uta.repaso.entities.Producto;
+import com.uta.repaso.servicios.CategoriaService;
+import com.uta.repaso.servicios.ProductoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+@Controller
+@RequestMapping("/productos")
+public class ProductoController {
+@Autowired
+private ProductoService productoService;
+@Autowired
+private CategoriaService categoriaService;
+@GetMapping
+public String listar(Model model) {
+model.addAttribute("producto", new Producto());
+model.addAttribute("productos", productoService.listar());
+model.addAttribute("categorias", categoriaService.listar());
+return "productos";
+}
+@PostMapping("/guardar")
+public String guardar(
+@RequestParam String idProducto,
+@RequestParam String nombre,
+@RequestParam Double precio,
+@RequestParam String idCategoria) {
+Categoria categoria = categoriaService.buscarPorId(idCategoria);
+Producto producto = new Producto();
+producto.setIdProducto(idProducto);
+producto.setNombre(nombre);
+producto.setPrecio(precio);
+producto.setCategoria(categoria);
+productoService.guardar(producto);
+return "redirect:/productos";
+}
+@GetMapping("/buscar")
+public String buscar(@RequestParam String nombre, Model model) {
+List<Producto> resultado = productoService.buscarPorNombre(nombre);
+model.addAttribute("producto", new Producto());
+model.addAttribute("productos", productoService.listar());
+model.addAttribute("categorias", categoriaService.listar());
+if (resultado != null && !resultado.isEmpty()) {
+model.addAttribute("productoEncontrado", resultado.get(0));
+}
+return "productos";
+}
+@GetMapping("/editar/{id}")
+public String editar(@PathVariable String id, Model model) {
+Producto producto = productoService.buscarPorId(id);
+model.addAttribute("producto", producto);
+model.addAttribute("productos", productoService.listar());
+model.addAttribute("categorias", categoriaService.listar());
+return "productos";
+}
+@GetMapping("/eliminar/{id}")
+public String eliminar(@PathVariable String id) {
+productoService.eliminar(id);
+return "redirect:/productos";
+}
+}
+==================================
+templates
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Categorías</title>
+</head>
+<body>
+<h1>Gestión de Categorías</h1>
+<form th:action="@{/categorias/guardar}" method="post">
+<label>ID Categoría</label><br>
+<input type="text" name="idCategoria" th:value="${categoria.idCategoria}"><br><br>
+<label>Nombre</label><br>
+<input type="text" name="nombre" th:value="${categoria.nombre}"><br><br>
+<label>Descripción</label><br>
+<input type="text" name="descripcion" th:value="${categoria.descripcion}"><br><br>
+<button type="submit">Guardar / Actualizar</button>
+</form>
+<hr>
+<form th:action="@{/categorias/buscar}" method="get">
+<input type="text" name="nombre" placeholder="Buscar categoría por nombre">
+<button type="submit">Buscar</button>
+</form>
+<div th:if="${categoriaEncontrada}">
+<h2>Productos de: <span th:text="${categoriaEncontrada.nombre}"></span></h2>
+<table border="1">
+<tr>
+<th>Nombre</th>
+<th>Precio</th>
+</tr>
+<tr th:each="prod : ${productosCategoria}">
+<td th:text="${prod.nombre}"></td>
+<td th:text="${prod.precio}"></td>
+</tr>
+<tr th:if="${#lists.isEmpty(productosCategoria)}">
+<td colspan="2">Esta categoría no tiene productos registrados</td>
+</tr>
+</table>
+</div>
+<hr>
+<table border="1">
+<tr>
+<th>ID</th>
+<th>Nombre</th>
+<th>Descripción</th>
+<th>Acciones</th>
+</tr>
+<tr th:each="c : ${categorias}">
+<td th:text="${c.idCategoria}"></td>
+<td th:text="${c.nombre}"></td>
+<td th:text="${c.descripcion}"></td>
+<td>
+<a th:href="@{/categorias/editar/{id}(id=${c.idCategoria})}">Editar</a>
+|
+<a th:href="@{/categorias/eliminar/{id}(id=${c.idCategoria})}">Eliminar</a>
+</td>
+</tr>
+</table>
+<br>
+<a href="/productos">Ir a Productos</a>
+</body>
+</html>
+========================================
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Productos</title>
+</head>
+<body>
+<h1>Gestión de Productos</h1>
+<form th:action="@{/productos/guardar}" method="post">
+<label>ID Producto</label><br>
+<input type="text" name="idProducto" th:value="${producto.idProducto}"><br><br>
+<label>Nombre</label><br>
+<input type="text" name="nombre" th:value="${producto.nombre}"><br><br>
+<label>Precio</label><br>
+<input type="number" step="0.01" name="precio" th:value="${producto.precio}"><br><br>
+<label>Categoría</label><br>
+<select name="idCategoria">
+<option value="">-- Seleccione una categoría --</option>
+<option th:each="cat : ${categorias}"
+th:value="${cat.idCategoria}"
+th:text="${cat.nombre}"
+th:selected="${producto.categoria != null && producto.categoria.idCategoria == cat.idCategoria}">
+</option>
+</select><br><br>
+<button type="submit">Guardar / Actualizar</button>
+</form>
+<hr>
+<form th:action="@{/productos/buscar}" method="get">
+<input type="text" name="nombre" placeholder="Buscar producto por nombre">
+<button type="submit">Buscar</button>
+</form>
+<div th:if="${productoEncontrado}">
+<h2>Resultado de búsqueda:</h2>
+<table border="1">
+<tr>
+<th>ID</th><th>Nombre</th><th>Precio</th><th>Categoría</th>
+</tr>
+<tr>
+<td th:text="${productoEncontrado.idProducto}"></td>
+<td th:text="${productoEncontrado.nombre}"></td>
+<td th:text="${productoEncontrado.precio}"></td>
+<td th:text="${productoEncontrado.categoria != null ?
+productoEncontrado.categoria.nombre :
+'Sin categoría'}"></td>
+</tr>
+</table>
+</div>
+<hr>
+<table border="1">
+<tr>
+<th>ID</th>
+<th>Nombre</th>
+<th>Precio</th>
+<th>Categoría</th>
+<th>Acciones</th>
+</tr>
+<tr th:each="p : ${productos}">
+<td th:text="${p.idProducto}"></td>
+<td th:text="${p.nombre}"></td>
+<td th:text="${p.precio}"></td>
+<td th:text="${p.categoria != null ?
+p.categoria.nombre :
+'Sin categoría'}"></td>
+<td>
+<a th:href="@{/productos/editar/{id}(id=${p.idProducto})}">Editar</a>
+|
+<a th:href="@{/productos/eliminar/{id}(id=${p.idProducto})}">Eliminar</a>
+</td>
+</tr>
+</table>
+<br>
+<a href="/categorias">Ir a Categorías</a>
+</body>
+</html>
